@@ -32,27 +32,16 @@ int FUZE_STATUS = 0;
 serialPortIdentifier_e FUZE_PORT_IDENTIFIER = SERIAL_PORT_USART5;
 
 /*
- * LIDAR STATUS
- *
- * -1 : UNKNOWN
- * 0  : Z (ERROR)
- * 1  : C (DISABLED)
- * 2  : L (ACTIVE AND LOW SIGNAL)
- * 3  : T (ACTIVE AND HIGH SIGNAL)
- */
-int LIDAR_STATUS = -1;
-
-/*
  * ALTITUDE STATUS
  *
  * -1 : UNKNOWN
  * 0  : Low Altitude
  * 1  : High Altitude
- * 
+ *
  */
 int ALTITUDE_STATUS = -1;
 
-static serialPort_t* dSerialPort = NULL;
+static serialPort_t *dSerialPort = NULL;
 static bool dInitializationCompleted = false;
 static bool dRcConnection = false;
 static bool dInitialSafety = false;
@@ -71,20 +60,15 @@ static float AUX5Value = 0; // PATLATMA
 static bool ControlHigh = false;
 static bool SafetyHigh = false;
 static bool ExplosionHigh = false;
-static bool LidarExplosionHigh = false;
 
 static bool fuseConnectedMessageReceived = false;
 static bool fuseConnected = false;
 
 static bool CHARGE_HIGH_REQUESTED = false;
-static bool LIDAR_SENSOR_ACTIVE_REQUESTED = false;
 static bool CHARGE_HIGH = false;
-static bool LIDAR_SENSOR_ACTIVE = true;
 
-static int LIDAR_EXPLOSION_DISTANCE = 400; // cm
-
-static int SAFETY_ALTITUDE_MAX = 2000; // 20 metre yükseldikten sonra patlatabilme izni verilsin veya
-static int SAFETY_ALTITUDE_MIN = -2000; // 20 metre alçalıktan sonra patlatabilme izni verilsin.
+static int SAFETY_ALTITUDE_MAX = 100;  // 20 metre yükseldikten sonra patlatabilme izni verilsin veya
+static int SAFETY_ALTITUDE_MIN = -100; // 20 metre alçalıktan sonra patlatabilme izni verilsin.
 
 static bool altitudeSafetyCheck = false;
 
@@ -108,11 +92,13 @@ static float oldAUX3 = 1500;
 static float oldAUX4 = 1500;
 static float oldAUX5 = 1500;
 
-int32_t getRangeFinderDistance(void){
+int32_t getRangeFinderDistance(void)
+{
     return rangefinderGetLatestRawAltitude();
 }
 
-int32_t getAltitude(void){
+int32_t getAltitude(void)
+{
     return baroGetLatestAltitude();
 }
 
@@ -121,23 +107,27 @@ void setFuzeData(int value)
     FUZE_STATUS = value;
 }
 
-void waitRcData(void){
-    if(dInitializationCompleted && !dRcConnection){
+void waitRcData(void)
+{
+    if (dInitializationCompleted && !dRcConnection)
+    {
         oldAUX2 = rxGetChannelValue(AUX2);
         oldAUX3 = rxGetChannelValue(AUX3);
         oldAUX4 = rxGetChannelValue(AUX4);
         oldAUX5 = rxGetChannelValue(AUX5);
 
         // At least one of them should be not equal to default mid value. AUX5 is in failsafe. Do not read it
-        if(oldAUX2 != AUX_MID_VALUE || 
+        if (oldAUX2 != AUX_MID_VALUE ||
             oldAUX3 != AUX_MID_VALUE ||
             oldAUX4 != AUX_MID_VALUE //||
-            //oldAUX5 != AUX_MID_VALUE
-        ){
+            // oldAUX5 != AUX_MID_VALUE
+        )
+        {
             dRcConnection = true;
         }
-        else{
-            //FUZE_STATUS = 8; // Connect Rc Controller
+        else
+        {
+            // FUZE_STATUS = 8; // Connect Rc Controller
             setFuzeData(8); // Connect Rc Controller
         }
     }
@@ -145,51 +135,65 @@ void waitRcData(void){
     return;
 }
 
-void checkSafety(void){
+void checkSafety(void)
+{
     static bool firstFuzeDataReceived = false;
 
-    if(dInitializationCompleted && dRcConnection && !dInitialSafety){
+    if (dInitializationCompleted && dRcConnection && !dInitialSafety)
+    {
         float aux2Val = rxGetChannelValue(AUX2);
         float aux3Val = rxGetChannelValue(AUX3);
         float aux4Val = rxGetChannelValue(AUX4);
         float aux5Val = rxGetChannelValue(AUX5);
 
-        if(!firstFuzeDataReceived){
+        if (!firstFuzeDataReceived)
+        {
             static uint32_t bytesWaiting = 0;
 
-            if (dSerialPort->rxBufferHead >= dSerialPort->rxBufferTail) {
+            if (dSerialPort->rxBufferHead >= dSerialPort->rxBufferTail)
+            {
                 bytesWaiting = dSerialPort->rxBufferHead - dSerialPort->rxBufferTail;
-            } else {
+            }
+            else
+            {
                 bytesWaiting = dSerialPort->rxBufferSize + dSerialPort->rxBufferHead - dSerialPort->rxBufferTail;
             }
 
-            if(bytesWaiting > 0){
+            if (bytesWaiting > 0)
+            {
                 firstFuzeDataReceived = true;
             }
         }
 
-        if(aux4Val > AUX_EDGE_VALUE && 
+        if (aux4Val > AUX_EDGE_VALUE &&
             aux2Val < AUX_EDGE_VALUE &&
             aux3Val < AUX_EDGE_VALUE_MIN &&
             aux5Val < AUX_EDGE_VALUE &&
-           firstFuzeDataReceived){
+            firstFuzeDataReceived)
+        {
             dInitialSafety = true;
             setFuzeData(0);
         }
-        else{
-            if(aux4Val < AUX_EDGE_VALUE){
+        else
+        {
+            if (aux4Val < AUX_EDGE_VALUE)
+            {
                 setFuzeData(3); // Güvenliği aç
             }
-            else if(aux3Val > AUX_EDGE_VALUE_MIN){
+            else if (aux3Val > AUX_EDGE_VALUE_MIN)
+            {
                 setFuzeData(4); // Şarjı kapat
             }
-            else if(aux5Val > AUX_EDGE_VALUE_MIN){
+            else if (aux5Val > AUX_EDGE_VALUE_MIN)
+            {
                 setFuzeData(5); // Patlatmaya basma
             }
-            else if(aux2Val > AUX_EDGE_VALUE){
+            else if (aux2Val > AUX_EDGE_VALUE)
+            {
                 setFuzeData(6); // Kontrole basma
             }
-            else if(!firstFuzeDataReceived){
+            else if (!firstFuzeDataReceived)
+            {
                 setFuzeData(7); // Anahtarı Aç
             }
         }
@@ -198,12 +202,15 @@ void checkSafety(void){
     return;
 }
 
-void initializationTask(void){
-    if(!dInitializationCompleted){
+void initializationTask(void)
+{
+    if (!dInitializationCompleted)
+    {
 
-        serialPortUsage_t* usage = findSerialPortUsageByIdentifier(FUZE_PORT_IDENTIFIER);
+        serialPortUsage_t *usage = findSerialPortUsageByIdentifier(FUZE_PORT_IDENTIFIER);
 
-        if(usage != NULL){
+        if (usage != NULL)
+        {
             dSerialPort = usage->serialPort;
 
             dInitializationCompleted = true;
@@ -219,7 +226,8 @@ void initializationTask(void){
 }
 
 // Read new rc data to local variables
-void readRcData(void){
+void readRcData(void)
+{
     AUX2Value = rxGetChannelValue(AUX2);
     AUX3Value = rxGetChannelValue(AUX3);
     AUX4Value = rxGetChannelValue(AUX4);
@@ -227,74 +235,68 @@ void readRcData(void){
 }
 
 // Examine readed rc values and assign them as high and low and set edge values if necessary
-void parseRcData(void){
-    if(AUX2Value > AUX_EDGE_VALUE){
+void parseRcData(void)
+{
+    if (AUX2Value > AUX_EDGE_VALUE)
+    {
         ControlHigh = true;
     }
-    else{
+    else
+    {
         ControlHigh = false;
     }
 
     if (altitudeSafetyCheck)
-    {   
-        if(AUX5Value > AUX_EDGE_VALUE){
-            if (LIDAR_STATUS == 2 || LIDAR_STATUS == 3)
-            {
-                LidarExplosionHigh = true;
-            }
-            
+    {
+        if (AUX5Value > AUX_EDGE_VALUE)
+        {
             ExplosionHigh = true;
         }
-        else{
-            if (LIDAR_STATUS == 1)
-            {
-                LidarExplosionHigh = false;
-            }
-            
+        else
+        {
             ExplosionHigh = false;
         }
     }
 
-    if(AUX4Value > AUX_EDGE_VALUE){
+    if (AUX4Value > AUX_EDGE_VALUE)
+    {
         SafetyHigh = true;
     }
-    else{
+    else
+    {
         SafetyHigh = false;
     }
 
     // HIGH
-    if(AUX3Value > AUX_EDGE_VALUE){
-        if(dLastAux3State != 3){
-            CHARGE_HIGH_REQUESTED = true;
-            LIDAR_SENSOR_ACTIVE_REQUESTED = true;
-        }
-
-        dLastAux3State = 3;
-    }
     // MID
-    else if(AUX3Value > AUX_EDGE_VALUE_MIN){
-        if(dLastAux3State != 2){
+    if (AUX3Value > AUX_EDGE_VALUE_MIN)
+    {
+        if (dLastAux3State != 2)
+        {
             CHARGE_HIGH_REQUESTED = true;
-            LIDAR_SENSOR_ACTIVE_REQUESTED = false;
         }
 
         dLastAux3State = 2;
     }
     // LOW
-    else{
-        if(dLastAux3State != 1){
+    else
+    {
+        if (dLastAux3State != 1)
+        {
             CHARGE_HIGH_REQUESTED = false;
-            LIDAR_SENSOR_ACTIVE_REQUESTED = false;
         }
 
         dLastAux3State = 1;
     }
 }
 
-void sendFuzeData(void){
+void sendFuzeData(void)
+{
 
-    if(SafetyHigh){
-        if(LAST_SEND_FUSE_MESSAGE != FM_SAFETY){
+    if (SafetyHigh)
+    {
+        if (LAST_SEND_FUSE_MESSAGE != FM_SAFETY)
+        {
             donmezogluSerialPrintC('G');
 
             fuseConnected = false;
@@ -305,7 +307,8 @@ void sendFuzeData(void){
             LAST_SEND_FUSE_MESSAGE = FM_SAFETY;
         }
     }
-    else{
+    else
+    {
         if (!CHARGE_HIGH_REQUESTED && CHARGE_HIGH && LAST_SEND_FUSE_MESSAGE != FM_CHARGE_SAFETY)
         {
             donmezogluSerialPrintC('G');
@@ -316,126 +319,118 @@ void sendFuzeData(void){
 
             LAST_SEND_FUSE_MESSAGE = FM_CHARGE_SAFETY;
         }
-        else if(ControlHigh){
-            if(LAST_SEND_FUSE_MESSAGE != FM_CONTROL){
+        else if (ControlHigh)
+        {
+            if (LAST_SEND_FUSE_MESSAGE != FM_CONTROL)
+            {
                 donmezogluSerialPrintC('K');
 
                 if (!controlCheck)
                 {
                     controlCheck = true;
                 }
-                
+
                 LAST_SEND_FUSE_MESSAGE = FM_CONTROL;
             }
         }
-        else if(ExplosionHigh && fuseConnected){
-
-            if (FUZE_STATUS == 2 && altitudeSafetyCheck)
-            {
-                if (!LIDAR_SENSOR_ACTIVE_REQUESTED)
-                {
-                    if (LAST_SEND_FUSE_MESSAGE != FM_EXPLOSION)
-                    {
-                        donmezogluSerialPrintC('P');
-
-                        LAST_SEND_FUSE_MESSAGE = FM_EXPLOSION;
-                    }
-                }
-            }
-            
-        }
-        else if (LidarExplosionHigh && fuseConnected)
+        else if (ExplosionHigh && fuseConnected)
         {
+
             if (FUZE_STATUS == 2 && altitudeSafetyCheck)
             {
-                if (LIDAR_SENSOR_ACTIVE && LIDAR_SENSOR_ACTIVE_REQUESTED)
+                if (LAST_SEND_FUSE_MESSAGE != FM_EXPLOSION)
                 {
-                    if (LIDAR_STATUS == 3)
-                    {
-                        if (LAST_SEND_FUSE_MESSAGE != FM_EXPLOSION)
-                        {
-                            donmezogluSerialPrintC('P');
+                    donmezogluSerialPrintC('P');
 
-                            LAST_SEND_FUSE_MESSAGE = FM_EXPLOSION;
-                        }
-                    }
+                    LAST_SEND_FUSE_MESSAGE = FM_EXPLOSION;
                 }
             }
         }
         else if (CHARGE_HIGH_REQUESTED && fuseConnected)
         {
-            if (!LIDAR_SENSOR_ACTIVE_REQUESTED && LIDAR_SENSOR_ACTIVE)
+            if (LAST_SEND_FUSE_MESSAGE != FM_CHARGE)
             {
-                // pass
-            }
-            else{
-                if(LAST_SEND_FUSE_MESSAGE != FM_CHARGE){
-                    donmezogluSerialPrintC('S');
+                donmezogluSerialPrintC('S');
 
-                    LAST_SEND_FUSE_MESSAGE = FM_CHARGE;
-                }
+                LAST_SEND_FUSE_MESSAGE = FM_CHARGE;
             }
         }
-        else{
+        else
+        {
             LAST_SEND_FUSE_MESSAGE = FM_NONE;
         }
     }
 }
 
-void serialDataReceivedF(void){
+void serialDataReceivedF(void)
+{
     // Zaten fünye kontrol edilmiş ve zaten bağlı olduğu biliniyorken tekrar status değiştirme yoksa E-E gösteremem
-    if(!fuseConnectedMessageReceived || !fuseConnected){
+    if (!fuseConnectedMessageReceived || !fuseConnected)
+    {
         fuseConnectedMessageReceived = true;
         fuseConnected = true;
         setFuzeData(1);
     }
 }
 
-void serialDataReceivedH(void){
+void serialDataReceivedH(void)
+{
     fuseConnectedMessageReceived = true;
     fuseConnected = false;
     setFuzeData(0);
 }
 
-void serialDataReceivedE(void){
+void serialDataReceivedE(void)
+{
     setFuzeData(2);
     CHARGE_HIGH = true;
 }
 
-void serialDataReceivedW(void){
+void serialDataReceivedW(void)
+{
     CHARGE_HIGH = false;
 
-    if(fuseConnected){
+    if (fuseConnected)
+    {
         setFuzeData(1);
     }
-    else{
+    else
+    {
         setFuzeData(0);
     }
 }
 
-void serialDataReceivedN(void){
+void serialDataReceivedN(void)
+{
     CHARGE_HIGH = false;
 
-    if(fuseConnected){
+    if (fuseConnected)
+    {
         setFuzeData(1);
     }
-    else{
+    else
+    {
         setFuzeData(0);
     }
 }
 
-
-void awaitFuzeData(void){
+void awaitFuzeData(void)
+{
     static uint32_t bytesWaiting = 0;
 
-    if (dSerialPort->rxBufferHead >= dSerialPort->rxBufferTail) {
+    if (dSerialPort->rxBufferHead >= dSerialPort->rxBufferTail)
+    {
         bytesWaiting = dSerialPort->rxBufferHead - dSerialPort->rxBufferTail;
-    } else {
+    }
+    else
+    {
         bytesWaiting = dSerialPort->rxBufferSize + dSerialPort->rxBufferHead - dSerialPort->rxBufferTail;
     }
 
-    if(bytesWaiting > 0){
-        for(uint32_t i = 1; i <= bytesWaiting; ++i){
+    if (bytesWaiting > 0)
+    {
+        for (uint32_t i = 1; i <= bytesWaiting; ++i)
+        {
             static uint8_t dataReaded;
             dataReaded = serialRead(dSerialPort);
 
@@ -461,7 +456,7 @@ void awaitFuzeData(void){
             case 'e':
                 serialDataReceivedE();
                 break;
-        
+
             default:
                 break;
             }
@@ -469,43 +464,10 @@ void awaitFuzeData(void){
     }
 }
 
-void awaitRangeFinderData(void)
-{
-    int32_t distance = getRangeFinderDistance();
-
-    if (distance > LIDAR_EXPLOSION_DISTANCE)
-    {
-        if (LIDAR_SENSOR_ACTIVE_REQUESTED)
-        {
-            LIDAR_SENSOR_ACTIVE = true;
-            LIDAR_STATUS = 2;
-        }else{
-            LIDAR_SENSOR_ACTIVE = false;
-            LIDAR_STATUS = 1;
-        }
-
-    }else if (distance >= 0)
-    {
-        if (LIDAR_SENSOR_ACTIVE_REQUESTED)
-        {
-            LIDAR_SENSOR_ACTIVE = true;
-            LIDAR_STATUS = 3;
-        }else{
-            LIDAR_SENSOR_ACTIVE = false;
-            LIDAR_STATUS = 1;
-        }
-    }
-    else
-    {
-        LIDAR_STATUS = 0;
-    }
-
-    return;
-}
-
 void awaitAltitudeData(void)
 {
-    if(!altitudeSafetyCheck){
+    if (!altitudeSafetyCheck)
+    {
         int32_t altitude = getAltitude();
         if (altitude > SAFETY_ALTITUDE_MAX || altitude < SAFETY_ALTITUDE_MIN)
         {
@@ -525,15 +487,14 @@ void awaitAltitudeData(void)
     return;
 }
 
-
-void periodicFuseCheck(timeUs_t currentTimeUs){
+void periodicFuseCheck(timeUs_t currentTimeUs)
+{
     if (!controlCheck)
     {
         return;
     }
-    
 
-    //5 saniyede bir fünye kontrolü yap
+    // 5 saniyede bir fünye kontrolü yap
     if (currentTimeUs - startTimeUs >= 5000000)
     {
         startTimeUs = currentTimeUs;
@@ -543,12 +504,14 @@ void periodicFuseCheck(timeUs_t currentTimeUs){
     return;
 }
 
-//#define UNUSED(x) (void)(x)
+// #define UNUSED(x) (void)(x)
 
-void periodicTask(timeUs_t currentTimeUs){
-    //UNUSED(currentTimeUs);
+void periodicTask(timeUs_t currentTimeUs)
+{
+    // UNUSED(currentTimeUs);
 
-    if(!dInitializationCompleted || !dRcConnection || !dInitialSafety){
+    if (!dInitializationCompleted || !dRcConnection || !dInitialSafety)
+    {
         return;
     }
 
@@ -557,8 +520,6 @@ void periodicTask(timeUs_t currentTimeUs){
     parseRcData();
 
     awaitAltitudeData();
-
-    awaitRangeFinderData();
 
     sendFuzeData();
 
@@ -569,7 +530,8 @@ void periodicTask(timeUs_t currentTimeUs){
     return;
 }
 
-void donmezogluUpdate(timeUs_t currentTimeUs){
+void donmezogluUpdate(timeUs_t currentTimeUs)
+{
     UNUSED(currentTimeUs);
 
     // Complete initialization if it is not completed yet
@@ -579,18 +541,23 @@ void donmezogluUpdate(timeUs_t currentTimeUs){
     periodicTask(currentTimeUs);
 }
 
-void donmezogluSerialPrintS(const char* str){
-    if(dSerialPort != NULL){
+void donmezogluSerialPrintS(const char *str)
+{
+    if (dSerialPort != NULL)
+    {
         // Iterate through each character in the string until '\0' (null terminator) is encountered
-        for (int i = 0; str[i] != '\0'; i++) {
+        for (int i = 0; str[i] != '\0'; i++)
+        {
             // Call serialWrite for each character in the string
             donmezogluSerialPrintC((uint8_t)str[i]);
         }
     }
 }
 
-void donmezogluSerialPrintC(uint8_t ch){
-    if(dSerialPort != NULL){
+void donmezogluSerialPrintC(uint8_t ch)
+{
+    if (dSerialPort != NULL)
+    {
         serialWrite(dSerialPort, ch);
     }
 }
