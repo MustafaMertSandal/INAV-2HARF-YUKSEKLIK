@@ -67,8 +67,8 @@ static bool fuseConnected = false;
 static bool CHARGE_HIGH_REQUESTED = false;
 static bool CHARGE_HIGH = false;
 
-static int SAFETY_ALTITUDE_MAX = 100;  // 20 metre yükseldikten sonra patlatabilme izni verilsin veya
-static int SAFETY_ALTITUDE_MIN = -100; // 20 metre alçalıktan sonra patlatabilme izni verilsin.
+static int SAFETY_ALTITUDE_MAX = 2000;  // 20 metre yükseldikten sonra patlatabilme izni verilsin veya
+static int SAFETY_ALTITUDE_MIN = -2000; // 20 metre alçalıktan sonra patlatabilme izni verilsin.
 
 static bool altitudeSafetyCheck = false;
 
