@@ -13,7 +13,7 @@
   * Note : Higher priorities cause error on runtime. Remain low priority.
  */
 
-extern int LIDAR_STATUS;
+extern int FUZE_STATUS;
 extern int ALTITUDE_STATUS;
 extern bool CHARGE_DISPLAYING;
 
