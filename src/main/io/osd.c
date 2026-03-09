@@ -2014,9 +2014,9 @@ static bool osdDrawSingleElement(uint8_t item)
 
         osdUpdateBatteryCapacityOrVoltageTextAttributes(&elemAttr); */
 
-        if (ALTITUDE_STATUS == 1)
+       if (ALTITUDE_STATUS == 1)
         {
-            strcpy(buff, "  PATLATMA AKTIF   ");
+            strcpy(buff, "PATLATMA AKTIF ");
         }
         else
         {
@@ -2035,12 +2035,7 @@ static bool osdDrawSingleElement(uint8_t item)
                 }
                 else
                 {
-                    strcpy(buff, "PATLATMA KAPALI ");
-                    int length = strlen(buff);
-                    buff[length++] = SYM_TERRAIN_FOLLOWING;
-                    buff[length++] = ' ';
-                    buff[length++] = SYM_ALERT;
-
+                    strcpy(buff, "PATLATMA KAPALI");
                     alertVisible = true;
                 }
                 lastAlert = now;
@@ -2801,17 +2796,35 @@ static bool osdDrawSingleElement(uint8_t item)
 
     case OSD_VTX_CHANNEL:
     {
-        vtxDeviceOsdInfo_t osdInfo;
-        vtxCommonGetOsdInfo(vtxCommonDevice(), &osdInfo);
+        if (ALTITUDE_STATUS == 1)
+        {
+            strcpy(buff, "PATLATMA AKTIF ");
+        }
+        else
+        {
+            uint32_t now = millis();
 
-        tfp_sprintf(buff, "CH:%c%s:", osdInfo.bandLetter, osdInfo.channelName);
-        displayWrite(osdDisplayPort, elemPosX, elemPosY, buff);
+            if (now - lastAlert > 1000)
+            {
+                if (alertVisible)
+                {
+                    for (size_t i = 0; i < 19; i++)
+                    {
+                        buff[i] = ' ';
+                    }
 
-        tfp_sprintf(buff, "%c", osdInfo.powerIndexLetter);
-        if (isAdjustmentFunctionSelected(ADJUSTMENT_VTX_POWER_LEVEL))
-            TEXT_ATTRIBUTES_ADD_BLINK(elemAttr);
-        displayWriteWithAttr(osdDisplayPort, elemPosX + 6, elemPosY, buff, elemAttr);
-        return true;
+                    alertVisible = false;
+                }
+                else
+                {
+                    strcpy(buff, "PATLATMA KAPALI");
+                    alertVisible = true;
+                }
+                lastAlert = now;
+            }
+        }
+
+        break;
     }
     break;
 
@@ -3303,7 +3316,7 @@ static bool osdDrawSingleElement(uint8_t item)
     {
         if (ALTITUDE_STATUS == 1)
         {
-            strcpy(buff, "  PATLATMA AKTIF   ");
+            strcpy(buff, "PATLATMA AKTIF ");
         }
         else
         {
@@ -3322,12 +3335,7 @@ static bool osdDrawSingleElement(uint8_t item)
                 }
                 else
                 {
-                    strcpy(buff, "PATLATMA KAPALI ");
-                    int length = strlen(buff);
-                    buff[length++] = SYM_TERRAIN_FOLLOWING;
-                    buff[length++] = ' ';
-                    buff[length++] = SYM_ALERT;
-
+                    strcpy(buff, "PATLATMA KAPALI");
                     alertVisible = true;
                 }
                 lastAlert = now;
@@ -3653,7 +3661,7 @@ static bool osdDrawSingleElement(uint8_t item)
     {
         if (ALTITUDE_STATUS == 1)
         {
-            strcpy(buff, "  PATLATMA AKTIF   ");
+            strcpy(buff, "PATLATMA AKTIF ");
         }
         else
         {
@@ -3672,12 +3680,7 @@ static bool osdDrawSingleElement(uint8_t item)
                 }
                 else
                 {
-                    strcpy(buff, "PATLATMA KAPALI ");
-                    int length = strlen(buff);
-                    buff[length++] = SYM_TERRAIN_FOLLOWING;
-                    buff[length++] = ' ';
-                    buff[length++] = SYM_ALERT;
-
+                    strcpy(buff, "PATLATMA KAPALI");
                     alertVisible = true;
                 }
                 lastAlert = now;
