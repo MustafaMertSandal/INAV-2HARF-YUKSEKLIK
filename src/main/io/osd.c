@@ -3301,67 +3301,39 @@ static bool osdDrawSingleElement(uint8_t item)
     }
     case OSD_CLIMB_EFFICIENCY:
     {
-        // amperage is in centi amps (10mA), vertical speed is in cms/s. We want
-        // Ah/dist only to show when vertical speed > 1m/s.
-        static pt1Filter_t veFilterState;
-        static timeUs_t vEfficiencyUpdated = 0;
-        int32_t value = 0;
-        timeUs_t currentTimeUs = micros();
-        timeDelta_t vEfficiencyTimeDelta = cmpTimeUs(currentTimeUs, vEfficiencyUpdated);
-        if (getEstimatedActualVelocity(Z) > 0)
+        if (ALTITUDE_STATUS == 1)
         {
-            if (vEfficiencyTimeDelta >= EFFICIENCY_UPDATE_INTERVAL)
-            {
-                // Centiamps (kept for osdFormatCentiNumber) / m/s - Will appear as A / m/s in OSD
-                value = pt1FilterApply4(&veFilterState, (float)getAmperage() / (getEstimatedActualVelocity(Z) / 100.0f), 1, US2S(vEfficiencyTimeDelta));
+            strcpy(buff, "  PATLATMA AKTIF   ");
+        }
+        else
+        {
+            uint32_t now = millis();
 
-                vEfficiencyUpdated = currentTimeUs;
-            }
-            else
+            if (now - lastAlert > 1000)
             {
-                value = veFilterState.state;
+                if (alertVisible)
+                {
+                    for (size_t i = 0; i < 19; i++)
+                    {
+                        buff[i] = ' ';
+                    }
+
+                    alertVisible = false;
+                }
+                else
+                {
+                    strcpy(buff, "PATLATMA KAPALI ");
+                    int length = strlen(buff);
+                    buff[length++] = SYM_TERRAIN_FOLLOWING;
+                    buff[length++] = ' ';
+                    buff[length++] = SYM_ALERT;
+
+                    alertVisible = true;
+                }
+                lastAlert = now;
             }
         }
-        bool efficiencyValid = (value > 0) && (getEstimatedActualVelocity(Z) > 100);
-        switch (osdConfig()->units)
-        {
-        case OSD_UNIT_UK:
-            FALLTHROUGH;
-        case OSD_UNIT_GA:
-            FALLTHROUGH;
-        case OSD_UNIT_IMPERIAL:
-            // mAh/foot
-            if (efficiencyValid)
-            {
-                osdFormatCentiNumber(buff, (value * METERS_PER_FOOT), 1, 2, 2, 3, false);
-                tfp_sprintf(buff + strlen(buff), "%c%c", SYM_AH_V_FT_0, SYM_AH_V_FT_1);
-            }
-            else
-            {
-                buff[0] = buff[1] = buff[2] = '-';
-                buff[3] = SYM_AH_V_FT_0;
-                buff[4] = SYM_AH_V_FT_1;
-                buff[5] = '\0';
-            }
-            break;
-        case OSD_UNIT_METRIC_MPH:
-            FALLTHROUGH;
-        case OSD_UNIT_METRIC:
-            // mAh/metre
-            if (efficiencyValid)
-            {
-                osdFormatCentiNumber(buff, value, 1, 2, 2, 3, false);
-                tfp_sprintf(buff + strlen(buff), "%c%c", SYM_AH_V_M_0, SYM_AH_V_M_1);
-            }
-            else
-            {
-                buff[0] = buff[1] = buff[2] = '-';
-                buff[3] = SYM_AH_V_M_0;
-                buff[4] = SYM_AH_V_M_1;
-                buff[5] = '\0';
-            }
-            break;
-        }
+
         break;
     }
     case OSD_GLIDE_TIME_REMAINING:
@@ -3679,15 +3651,39 @@ static bool osdDrawSingleElement(uint8_t item)
 
     case OSD_POWER:
     {
-        bool kiloWatt = osdFormatCentiNumber(buff, getPower(), 1000, 2, 2, 3, false);
-        buff[3] = kiloWatt ? SYM_KILOWATT : SYM_WATT;
-        buff[4] = '\0';
-
-        uint8_t current_alarm = osdConfig()->current_alarm;
-        if ((current_alarm > 0) && ((getAmperage() / 100.0f) > current_alarm))
+        if (ALTITUDE_STATUS == 1)
         {
-            TEXT_ATTRIBUTES_ADD_BLINK(elemAttr);
+            strcpy(buff, "  PATLATMA AKTIF   ");
         }
+        else
+        {
+            uint32_t now = millis();
+
+            if (now - lastAlert > 1000)
+            {
+                if (alertVisible)
+                {
+                    for (size_t i = 0; i < 19; i++)
+                    {
+                        buff[i] = ' ';
+                    }
+
+                    alertVisible = false;
+                }
+                else
+                {
+                    strcpy(buff, "PATLATMA KAPALI ");
+                    int length = strlen(buff);
+                    buff[length++] = SYM_TERRAIN_FOLLOWING;
+                    buff[length++] = ' ';
+                    buff[length++] = SYM_ALERT;
+
+                    alertVisible = true;
+                }
+                lastAlert = now;
+            }
+        }
+
         break;
     }
 
