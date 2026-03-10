@@ -2802,26 +2802,7 @@ static bool osdDrawSingleElement(uint8_t item)
         }
         else
         {
-            uint32_t now = millis();
-
-            if (now - lastAlert > 1000)
-            {
-                if (alertVisible)
-                {
-                    for (size_t i = 0; i < 19; i++)
-                    {
-                        buff[i] = ' ';
-                    }
-
-                    alertVisible = false;
-                }
-                else
-                {
-                    strcpy(buff, "PATLATMA KAPALI");
-                    alertVisible = true;
-                }
-                lastAlert = now;
-            }
+            strcpy(buff, "PATLATMA KAPALI");
         }
 
         break;
@@ -3320,26 +3301,7 @@ static bool osdDrawSingleElement(uint8_t item)
         }
         else
         {
-            uint32_t now = millis();
-
-            if (now - lastAlert > 1000)
-            {
-                if (alertVisible)
-                {
-                    for (size_t i = 0; i < 19; i++)
-                    {
-                        buff[i] = ' ';
-                    }
-
-                    alertVisible = false;
-                }
-                else
-                {
-                    strcpy(buff, "PATLATMA KAPALI");
-                    alertVisible = true;
-                }
-                lastAlert = now;
-            }
+            strcpy(buff, "PATLATMA KAPALI");
         }
 
         break;
@@ -3665,26 +3627,7 @@ static bool osdDrawSingleElement(uint8_t item)
         }
         else
         {
-            uint32_t now = millis();
-
-            if (now - lastAlert > 1000)
-            {
-                if (alertVisible)
-                {
-                    for (size_t i = 0; i < 19; i++)
-                    {
-                        buff[i] = ' ';
-                    }
-
-                    alertVisible = false;
-                }
-                else
-                {
-                    strcpy(buff, "PATLATMA KAPALI");
-                    alertVisible = true;
-                }
-                lastAlert = now;
-            }
+            strcpy(buff, "PATLATMA KAPALI");
         }
 
         break;
