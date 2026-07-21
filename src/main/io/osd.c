@@ -831,6 +831,46 @@ static void osdFormatCraftName(char *buff)
     }
 }
 
+static void osdFormatFuzeStatus(char *buff)
+{
+    if (FUZE_STATUS == 0)
+    {
+        strcpy(buff, "      H-H      ");
+    }
+    else if (FUZE_STATUS == 1)
+    {
+        strcpy(buff, "      E-H      ");
+    }
+    else if (FUZE_STATUS == 2)
+    {
+        strcpy(buff, "      E-E      ");
+    }
+    else if (FUZE_STATUS == 3)
+    {
+        strcpy(buff, "GUVENLIK > AC  ");
+    }
+    else if (FUZE_STATUS == 4)
+    {
+        strcpy(buff, "  SARJ > KAPAT ");
+    }
+    else if (FUZE_STATUS == 5)
+    {
+        strcpy(buff, "PATLAMA > KAPAT");
+    }
+    else if (FUZE_STATUS == 6)
+    {
+        strcpy(buff, "KONTROL > KAPAT");
+    }
+    else if (FUZE_STATUS == 7)
+    {
+        strcpy(buff, "  ANAHTAR > AC ");
+    }
+    else if (FUZE_STATUS == 8)
+    {
+        strcpy(buff, "KUMANDAYI BAGLA");
+    }
+}
+
 void osdFormatPilotName(char *buff)
 {
     if (strlen(systemConfig()->pilotName) == 0)
@@ -1949,43 +1989,7 @@ static bool osdDrawSingleElement(uint8_t item)
         }
         */
 
-        if (FUZE_STATUS == 0)
-        {
-            strcpy(buff, "      H-H      ");
-        }
-        else if (FUZE_STATUS == 1)
-        {
-            strcpy(buff, "      E-H      ");
-        }
-        else if (FUZE_STATUS == 2)
-        {
-            strcpy(buff, "      E-E      ");
-        }
-        else if (FUZE_STATUS == 3)
-        {
-            strcpy(buff, "GUVENLIK > AC  ");
-        }
-        else if (FUZE_STATUS == 4)
-        {
-            strcpy(buff, "  SARJ > KAPAT ");
-        }
-        else if (FUZE_STATUS == 5)
-        {
-            strcpy(buff, "PATLAMA > KAPAT");
-        }
-        else if (FUZE_STATUS == 6)
-        {
-            strcpy(buff, "KONTROL > KAPAT");
-        }
-        else if (FUZE_STATUS == 7)
-        {
-            strcpy(buff, "  ANAHTAR > AC ");
-        }
-        else if (FUZE_STATUS == 8)
-        {
-            strcpy(buff, "KUMANDAYI BAGLA");
-        }
-
+        osdFormatFuzeStatus(buff);
         break;
     }
 
@@ -2775,7 +2779,7 @@ static bool osdDrawSingleElement(uint8_t item)
     }
 
     case OSD_CRAFT_NAME:
-        osdFormatCraftName(buff);
+        osdFormatFuzeStatus(buff);
         break;
 
     case OSD_PILOT_NAME:
